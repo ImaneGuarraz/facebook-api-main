@@ -1,0 +1,1936 @@
+openapi: 3.0.3
+info:
+  title: Facebook Events API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      required: [id, email, firstName, lastName]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string
+    GroupMember:
+      type: object
+      required: [user, role]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        role:
+          type: string
+          enum: [member, admin, superadmin]
+    Group:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - icon
+        - coverPhoto
+        - visibility
+        - membersCanPost
+        - membersCanCreateEvents
+        - role
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+          format: uri
+          nullable: true
+        coverPhoto:
+          type: string
+          format: uri
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private, secret]
+        membersCanPost:
+          type: boolean
+        membersCanCreateEvents:
+          type: boolean
+        role:
+          type: string
+          nullable: true
+          enum: [member, admin, superadmin]
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+    JoinRequest:
+      type: object
+      required: [id, group, user, createdAt]
+      properties:
+        id:
+          type: string
+        group:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+    GroupInvitation:
+      type: object
+      required: [id, group, user, invitedBy, status]
+      properties:
+        id:
+          type: string
+        group:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        invitedBy:
+          $ref: '#/components/schemas/User'
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+    Event:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - startDate
+        - endDate
+        - location
+        - coverPhoto
+        - visibility
+        - group
+        - createdBy
+        - organizers
+        - participants
+        - shoppingListEnabled
+        - carpoolingEnabled
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+        coverPhoto:
+          type: string
+          format: uri
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+        group:
+          type: string
+          nullable: true
+        createdBy:
+          $ref: '#/components/schemas/User'
+        organizers:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        shoppingListEnabled:
+          type: boolean
+        carpoolingEnabled:
+          type: boolean
+    EventWrite:
+      type: object
+      additionalProperties: false
+      required: [name, startDate, endDate, location, visibility]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 1
+          maxLength: 200
+        coverPhoto:
+          type: string
+          format: uri
+        visibility:
+          type: string
+          enum: [public, private]
+        shoppingListEnabled:
+          type: boolean
+        carpoolingEnabled:
+          type: boolean
+    EventUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 1
+          maxLength: 200
+        coverPhoto:
+          type: string
+          format: uri
+        visibility:
+          type: string
+          enum: [public, private]
+        shoppingListEnabled:
+          type: boolean
+        carpoolingEnabled:
+          type: boolean
+    EventInvitation:
+      type: object
+      required: [id, event, user, invitedBy, status]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        invitedBy:
+          $ref: '#/components/schemas/User'
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+    PollOption:
+      type: object
+      required: [id, text, count]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        count:
+          type: integer
+          minimum: 0
+    PollQuestion:
+      type: object
+      required: [id, text, options]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollOption'
+    PollChoice:
+      type: object
+      required: [questionId, optionId]
+      properties:
+        questionId:
+          type: string
+        optionId:
+          type: string
+    Poll:
+      type: object
+      required: [id, event, createdBy, questions, myChoices]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        createdBy:
+          $ref: '#/components/schemas/User'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollQuestion'
+        myChoices:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/PollChoice'
+    PollWrite:
+      type: object
+      additionalProperties: false
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [text, options]
+            properties:
+              text:
+                type: string
+                minLength: 1
+                maxLength: 300
+              options:
+                type: array
+                minItems: 2
+                maxItems: 12
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+    PollAnswers:
+      type: object
+      additionalProperties: false
+      required: [choices]
+      properties:
+        choices:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [questionId, optionId]
+            properties:
+              questionId:
+                type: string
+              optionId:
+                type: string
+    UserId:
+      type: object
+      additionalProperties: false
+      required: [userId]
+      properties:
+        userId:
+          type: string
+paths:
+  /api/auth/register:
+    post:
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password, firstName, lastName]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/login:
+    post:
+      summary: Sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/users/me:
+    get:
+      summary: Read the signed-in user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      summary: Update the signed-in user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups:
+    post:
+      summary: Create a group
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, visibility]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                description:
+                  type: string
+                  maxLength: 2000
+                icon:
+                  type: string
+                  format: uri
+                coverPhoto:
+                  type: string
+                  format: uri
+                visibility:
+                  type: string
+                  enum: [public, private, secret]
+                membersCanPost:
+                  type: boolean
+                membersCanCreateEvents:
+                  type: boolean
+      responses:
+        '201':
+          description: Group created. The creator is the superadmin, so members are included.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: List visible groups
+      description: Public and private groups, plus secret groups the caller belongs to. Each entry is a profile with the caller's role, without the member list.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Visible groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Read a group
+      description: Members are included for a public group, and for a private or secret group when the caller is a member. A secret group hidden from the caller is a 404.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Group profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      summary: Update a group
+      description: Reserved to a superadmin of the group.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                description:
+                  type: string
+                  maxLength: 2000
+                icon:
+                  type: string
+                  format: uri
+                coverPhoto:
+                  type: string
+                  format: uri
+                visibility:
+                  type: string
+                  enum: [public, private, secret]
+                membersCanPost:
+                  type: boolean
+                membersCanCreateEvents:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated group, including members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a group
+      description: Reserved to a superadmin of the group.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Group deleted
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/join:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Join a group or request to join
+      description: A public group adds the caller as a member. A private group creates a join request. A secret group stays hidden and rejects the call with 404. A pending invitation on a private group must be accepted instead.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Membership created, or join request created for a private group
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Group'
+                  - $ref: '#/components/schemas/JoinRequest'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown group, or secret group hidden from the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already a member, request already pending, or invitation already pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/join-requests:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: List pending join requests
+      description: An admin or a superadmin of the group.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pending join requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JoinRequest'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/join-requests/{userId}/accept:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Accept a join request
+      description: An admin or a superadmin adds the user as a member.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Updated group, including members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown group, hidden group, or no pending request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User is already a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/join-requests/{userId}/reject:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Reject a join request
+      description: An admin or a superadmin deletes the pending request. The user can request again.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Request rejected
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown group, hidden group, or no pending request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/invitations:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Invite a user to the group
+      description: An admin or a superadmin. The invitee accepts or declines the invitation.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [userId]
+              properties:
+                userId:
+                  type: string
+      responses:
+        '201':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupInvitation'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group, or unknown user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already a member, invitation already pending, or request already pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/members/{userId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      summary: Change a member role
+      description: Reserved to a superadmin. Demoting the last superadmin is rejected.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [member, admin, superadmin]
+      responses:
+        '200':
+          description: Updated group, including members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown group, hidden group, or user is not a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The group would lose its last superadmin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Remove a member
+      description: Reserved to a superadmin. Removing the last superadmin is rejected.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Member removed
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown group, hidden group, or user is not a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The group would lose its last superadmin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/group-invitations/{id}/accept:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Accept an invitation
+      description: The invitee becomes a member. Someone else's invitation is a 404.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Group the caller just joined, including members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown invitation, or invitation that is not pending for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/group-invitations/{id}/decline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Decline an invitation
+      description: The invitee declines. Someone else's invitation is a 404.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Invitation declined
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown invitation, or invitation that is not pending for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events:
+    post:
+      summary: Create an event
+      description: The caller becomes the creator, an organizer, and a participant.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventWrite'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Validation failed, or startDate is not before endDate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: List visible events
+      description: Public events, plus private events the caller organizes, attends, created, or can administer as a group admin or superadmin. Sorted by start date.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Visible events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/events:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Create an event in a group
+      description: A member can create an event only when membersCanCreateEvents is true. An admin or a superadmin always can. A secret group cannot have a public event.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventWrite'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Validation failed, dates out of order, or a public event in a secret group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/groups/{id}/events/{eventId}/invite-members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Invite the current group members
+      description: Creates a pending invitation for each current member who is not already a participant and has no pending invitation. The caller is the creator, an organizer, or a group admin or superadmin.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Invitations created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventInvitation'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden group, or event that is not in this group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Read an event
+      description: A private event is visible to its organizers, participants, creator, and a group admin or superadmin. A pending invitation does not grant access.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      summary: Update an event
+      description: Reserved to the creator, or an admin or superadmin of the group. Visibility may change. The group does not change. A secret group cannot receive a public event.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventUpdate'
+      responses:
+        '200':
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Validation failed, dates out of order, or a public event in a secret group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete an event
+      description: Reserved to the creator, or an admin or superadmin of the group. Deletes the event invitations too.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Event deleted
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/organizers:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Add an organizer
+      description: Reserved to the creator, or an admin or superadmin of the group. Does not add the user as a participant.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserId'
+      responses:
+        '201':
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or unknown user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already an organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/organizers/{userId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Remove an organizer
+      description: Reserved to the creator, or an admin or superadmin of the group. The last organizer cannot be removed. The user stays a participant.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Organizer removed
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or user is not an organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The event would lose its last organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/participants:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Join a public event
+      description: The caller joins a public event. A pending invitation for that caller is marked accepted. A private event rejects the call.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Event the caller just joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The event is private
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already a participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/participants/{userId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Leave or remove a participant
+      description: The caller can remove themselves. The creator, an organizer, or a group admin or superadmin can remove another participant. The organizer role is kept.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Participant removed
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or user is not a participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/invitations:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Invite a user to an event
+      description: The caller is the creator, an organizer, or a group admin or superadmin. Works for a public or a private event. The invitee accepts or declines.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserId'
+      responses:
+        '201':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventInvitation'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or unknown user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Already a participant, or invitation already pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/event-invitations/{id}/accept:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Accept an event invitation
+      description: The invitee becomes a participant, not an organizer. Someone else's invitation is a 404.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Event the caller just joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown invitation, or invitation that is not pending for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/event-invitations/{id}/decline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Decline an event invitation
+      description: The invitee declines. Someone else's invitation is a 404.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Invitation declined
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown invitation, or invitation that is not pending for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/polls:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Create a poll
+      description: An organizer creates a poll. Each question has two or more options, and a participant later picks one option per question.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollWrite'
+      responses:
+        '201':
+          description: Poll created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Poll'
+        '400':
+          description: Validation failed or invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The caller is not an organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: List the polls of an event
+      description: Anyone who can read the event sees its polls, how many times each option was chosen, and their own choices.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Polls of the event, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Poll'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/polls/{pollId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pollId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Read a poll
+      description: Anyone who can read the event sees the poll, how many times each option was chosen, and their own choices.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The poll
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Poll'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or poll that does not belong to it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a poll
+      description: An organizer deletes the poll and every answer.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Poll deleted
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The caller is not an organizer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or poll that does not belong to it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/polls/{pollId}/answers:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pollId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Answer a poll
+      description: A participant chooses exactly one option for every question. Sending the ballot again replaces the previous one.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollAnswers'
+      responses:
+        '200':
+          description: The poll, including the caller's choices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Poll'
+        '400':
+          description: Validation failed, or the choices do not cover each question once
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The caller is not a participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown or hidden event, or poll that does not belong to it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -1,0 +1,37 @@
+import mongoose from 'mongoose';
+
+const groupInvitationSchema = new mongoose.Schema(
+  {
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: true,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    invitedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'declined'],
+      default: 'pending',
+      required: true,
+    },
+  },
+  { timestamps: true },
+);
+
+groupInvitationSchema.index(
+  { group: 1, user: 1 },
+  { unique: true, partialFilterExpression: { status: 'pending' } },
+);
+
+const GroupInvitation = mongoose.model('GroupInvitation', groupInvitationSchema);
+
+export default GroupInvitation;
